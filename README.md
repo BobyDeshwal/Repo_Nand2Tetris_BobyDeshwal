@@ -268,3 +268,42 @@ CHIP Add16 {
     FullAdder(a=a[14], b=b[14], c=c14,   sum=out[14], carry=c15);
     FullAdder(a=a[15], b=b[15], c=c15,   sum=out[15], carry=overflow);
 }
+#ALU
+
+CHIP ALU {
+IN 
+x[16], y[16], // 16-bit inputs 
+zx, // zero the x input?
+nx, // negate the x input?
+zy, // zero the y input?
+ny, // negate the y input?
+f, // compute (out = x + y) or (out = x & y)?
+no; // negate the out output?
+OUT 
+out[16], // 16-bit output
+zr, // if (out == 0) equals 1, else 0
+ng; // if (out < 0) equals 1, else 0
+
+PARTS:
+
+Mux16(a=x, b=false, sel=zx, out=x1);
+Not16(in=x1, out=nx1);
+Mux16(a=x1, b=nx1, sel=nx, out=x2);
+
+Mux16(a=y, b=false, sel=zy, out=y1);
+Not16(in=y1, out=ny1);
+Mux16(a=y1, b=ny1, sel=ny, out=y2);
+
+And16(a=x2, b=y2, out=fAnd);
+Add16(a=x2, b=y2, out=fAdd);
+Mux16(a=fAnd, b=fAdd, sel=f, out=fOut);
+
+Not16(in=fOut, out=nfOut);
+Mux16(a=fOut, b=nfOut, sel=no, out=out, out[0..7]=low8, out[8..15]=high8, out[15]=ng);
+
+Or8Way(in=low8, out=orLow);
+Or8Way(in=high8, out=orHigh);
+Or(a=orLow, b=orHigh, out=notZero);
+Not(in=notZero, out=zr);
+}
+
